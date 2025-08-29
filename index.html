@@ -2,126 +2,1990 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task-12 Murf AI 30-Day Challenge</title>
-    <link rel="icon" href="static/logo.jpeg" type="image/jpeg">
-    <link rel="stylesheet" href="static/styles.css">
+    <title>Arcanus the Wise - AI Voice Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-purple: #8a2be2;
+            --secondary-purple: #4b0082;
+            --accent-gold: #ffd700;
+            --dark-blue: #1a1a2e;
+            --medium-blue: #16213e;
+            --light-blue: #0f3460;
+            --text-light: #f0f0f0;
+            --text-muted: #b8b8d1;
+            --glass-bg: rgba(25, 25, 60, 0.9);
+            --glass-border: rgba(138, 43, 226, 0.3);
+        }
+        
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, var(--dark-blue), var(--medium-blue), var(--light-blue));
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        /* Enhanced mystical background */
+        .mystical-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(75, 0, 130, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(72, 61, 139, 0.15) 0%, transparent 50%);
+            animation: mysticalGlow 12s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+        
+        @keyframes mysticalGlow {
+            0% { opacity: 0.4; transform: scale(1) rotate(0deg); }
+            100% { opacity: 0.8; transform: scale(1.05) rotate(5deg); }
+        }
+        
+        /* Configuration Sidebar */
+        .config-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border-left: 2px solid var(--glass-border);
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .config-sidebar.open {
+            right: 0;
+        }
+        
+        .config-header {
+            padding: 30px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(138, 43, 226, 0.1);
+        }
+        
+        .config-title {
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .config-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+        
+        .config-content {
+            padding: 25px;
+        }
+        
+        .config-section {
+            margin-bottom: 30px;
+        }
+        
+        .config-section-title {
+            color: var(--accent-gold);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .config-field {
+            margin-bottom: 20px;
+        }
+        
+        .config-label {
+            display: block;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .config-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .config-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        
+        .config-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .config-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .toggle-switch.active {
+            background: var(--primary-purple);
+            border-color: var(--accent-gold);
+        }
+        
+        .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 19px;
+            height: 19px;
+            background: var(--text-light);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toggle-switch.active .toggle-knob {
+            left: 27px;
+            background: var(--accent-gold);
+        }
+        
+        .config-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .config-btn {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(45deg, var(--primary-purple), var(--secondary-purple));
+            border: 1px solid var(--accent-gold);
+            color: var(--text-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+        
+        .config-btn:hover {
+            background: linear-gradient(45deg, #9932cc, #5a0a82);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+        }
+        
+        .config-btn.secondary {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: var(--text-muted);
+        }
+        
+        .config-btn.secondary:hover {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: var(--accent-gold);
+        }
+        
+        /* Config toggle button */
+        .config-toggle-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--glass-bg);
+            border: 2px solid var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .config-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+        }
+        
+        .config-toggle-btn.active {
+            background: var(--primary-purple);
+            transform: rotate(180deg);
+        }
+        
+        /* Main container with sidebar consideration */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            transition: margin-right 0.4s ease;
+        }
+        
+        .container.sidebar-open {
+            margin-right: 400px;
+        }
+        
+        /* Enhanced header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 40px 30px;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            border: 2px solid var(--glass-border);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.3);
+            backdrop-filter: blur(15px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.1), transparent, rgba(138, 43, 226, 0.1), transparent);
+            animation: headerRotate 20s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes headerRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .wizard-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--accent-gold), #fff8dc, #daa520, var(--accent-gold));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+            animation: titleShine 4s ease-in-out infinite;
+            position: relative;
+        }
+        
+        @keyframes titleShine {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .wizard-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        
+        .persona-info {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .trait-badge {
+            background: rgba(138, 43, 226, 0.25);
+            border: 1px solid rgba(138, 43, 226, 0.6);
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            color: #e6e6fa;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        
+        .trait-badge:hover {
+            background: rgba(138, 43, 226, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
+        }
+        
+        /* Enhanced main content grid */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .container.sidebar-open {
+                margin-right: 0;
+            }
+            .config-sidebar {
+                width: 100vw;
+                right: -100vw;
+            }
+        }
+        
+        /* Enhanced panels */
+        .panel {
+            background: var(--glass-bg);
+            border-radius: 20px;
+            padding: 35px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.2);
+        }
+        
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+            z-index: 0;
+        }
+        
+        .panel:hover::before {
+            left: 100%;
+        }
+        
+        .panel-title {
+            font-size: 1.6rem;
+            color: var(--accent-gold);
+            margin-bottom: 25px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .crystal-orb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #fff, var(--accent-gold), var(--primary-purple));
+            animation: orbPulse 3s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        @keyframes orbPulse {
+            0%, 100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); 
+            }
+            50% { 
+                transform: scale(1.2); 
+                box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); 
+            }
+        }
+        
+        /* Enhanced voice controls */
+        .voice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .record-btn {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-purple), var(--secondary-purple), #191970);
+            border: 4px solid var(--accent-gold);
+            color: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .record-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+            animation: btnRotate 3s linear infinite paused;
+            z-index: -1;
+        }
+        
+        .record-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.6);
+        }
+        
+        .record-btn:hover::before {
+            animation-play-state: running;
+        }
+        
+        .record-btn.recording {
+            background: radial-gradient(circle, #dc143c, #8b0000, #4b0000);
+            animation: recordPulse 1.5s ease-in-out infinite;
+            box-shadow: 0 15px 40px rgba(220, 20, 60, 0.6);
+        }
+        
+        .record-btn.recording::before {
+            animation-play-state: running;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 0, 0, 0.3), transparent);
+        }
+        
+        @keyframes recordPulse {
+            0%, 100% { transform: scale(1.08); }
+            50% { transform: scale(1.15); }
+        }
+        
+        @keyframes btnRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .demo-btn, .greeting-btn {
+            background: linear-gradient(45deg, var(--primary-purple), var(--secondary-purple));
+            border: 2px solid var(--accent-gold);
+            color: #fff;
+            padding: 14px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1rem;
+            font-family: inherit;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .demo-btn::before, .greeting-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .demo-btn:hover, .greeting-btn:hover {
+            background: linear-gradient(45deg, #9932cc, #5a0a82);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+            transform: translateY(-3px);
+        }
+        
+        .demo-btn:hover::before, .greeting-btn:hover::before {
+            left: 100%;
+        }
+        
+        /* Enhanced status indicator */
+        .status-indicator {
+            text-align: center;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+            font-style: italic;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-listening {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--accent-gold);
+            border-color: rgba(255, 215, 0, 0.4);
+            animation: statusGlow 2s ease-in-out infinite;
+        }
+        
+        .status-processing {
+            background: rgba(138, 43, 226, 0.2);
+            color: #dda0dd;
+            border-color: rgba(138, 43, 226, 0.4);
+            animation: statusPulse 1.5s ease-in-out infinite;
+        }
+        
+        .status-speaking {
+            background: rgba(50, 205, 50, 0.2);
+            color: #98fb98;
+            border-color: rgba(50, 205, 50, 0.4);
+        }
+        
+        @keyframes statusGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
+        }
+        
+        @keyframes statusPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        /* Enhanced chat display */
+        .chat-display {
+            max-height: 450px;
+            overflow-y: auto;
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chat-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-display::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        .chat-display::-webkit-scrollbar-thumb {
+            background: var(--primary-purple);
+            border-radius: 4px;
+        }
+        
+        .chat-display::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-gold);
+        }
+        
+        /* Enhanced messages */
+        .message {
+            margin-bottom: 20px;
+            padding: 18px;
+            border-radius: 15px;
+            animation: messageAppear 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @keyframes messageAppear {
+            0% { 
+                opacity: 0; 
+                transform: translateY(30px) scale(0.95); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+        
+        .user-message {
+            background: rgba(70, 130, 180, 0.3);
+            border-left: 4px solid #4682b4;
+            margin-left: 30px;
+            border-radius: 15px 15px 5px 15px;
+        }
+        
+        .assistant-message {
+            background: rgba(138, 43, 226, 0.25);
+            border-left: 4px solid var(--primary-purple);
+            margin-right: 30px;
+            border-radius: 15px 15px 15px 5px;
+        }
+        
+        .message-header {
+            font-weight: bold;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .message-content {
+            color: var(--text-light);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        /* Enhanced file upload */
+        .file-upload {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--secondary-purple), var(--primary-purple));
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid var(--accent-gold);
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-label::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .file-label:hover {
+            background: linear-gradient(45deg, #5a0a82, #9932cc);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(138, 43, 226, 0.4);
+        }
+        
+        .file-label:hover::before {
+            left: 100%;
+        }
+        
+        /* Enhanced audio player */
+        .audio-player {
+            width: 100%;
+            margin: 15px 0;
+            border-radius: 10px;
+            filter: sepia(1) hue-rotate(240deg) saturate(2);
+        }
+        
+        /* Enhanced footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-muted);
+            font-style: italic;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        
+        .footer-quote {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--accent-gold);
+        }
+        
+        /* Enhanced particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            animation: float 8s linear infinite;
+            opacity: 0;
+        }
+        
+        .particle:nth-child(odd) {
+            background: var(--primary-purple);
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Notification system */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px 25px;
+            color: var(--text-light);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .notification.success {
+            border-color: rgba(50, 205, 50, 0.5);
+            background: rgba(50, 205, 50, 0.1);
+        }
+        
+        .notification.error {
+            border-color: rgba(220, 20, 60, 0.5);
+            background: rgba(220, 20, 60, 0.1);
+        }
+        
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 25px 20px;
+            }
+            
+            .panel {
+                padding: 25px;
+            }
+            
+            .record-btn {
+                width: 120px;
+                height: 120px;
+                font-size: 1.1rem;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .demo-btn, .greeting-btn {
+                width: 200px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <img src="static/logo.jpeg" alt="Murf AI Logo" class="logo">
-            <h1>Murf AI</h1>
-            <h2>Conversational AI Assistant</h2>
-            <!-- <p> </p> -->
-        </header>
+    <div class="mystical-bg"></div>
+    <div class="particles" id="particles"></div>
+    
+    <button class="config-toggle-btn" id="configToggleBtn">
+        ⚙️
+    </button>
+    
+    <div class="config-sidebar" id="configSidebar">
+        <div class="config-header">
+            <h2 class="config-title">
+                🔮 Mystical Configuration
+            </h2>
+            <p class="config-subtitle">Configure your magical experience</p>
+        </div>
         
-        <main>
-            <div class="voice-agent">
-                <div class="reset-container">
-                    <button id="resetBtn" class="reset-button" type="button">
-                        <span class="reset-text">Reset Conversation</span>
-                    </button>
-                </div>
-                <h1>AI Voice Agent</h1>
-                <div class="main-controls">
-                    <div class="particle"></div>
-                    <div class="particle"></div>
-                    <div class="particle"></div>
-                    <div class="particle"></div>
-                    <div class="particle"></div>
-                    <button id="recordBtn" class="record-button" type="button">
-                        <div class="record-icon">
-                            <div class="record-dot"></div>
-                        </div>
-                        <span class="record-text">Start Recording</span>
-                    </button>
-                </div>
-                <div class="recording-indicator hidden" id="recordingIndicator">
-                    <div class="recording-dot"></div>
-                    <span id="recordingText">Recording in progress...</span>
-                </div>
-                <div class="processing-indicator hidden" id="processingIndicator">
-                    <div class="spinner"></div>
-                    <span id="processingText">Processing...</span>
+        <div class="config-content">
+            <div class="config-section">
+                <h3 class="config-section-title">
+                    🗝️ API Keys
+                </h3>
+                
+                <div class="config-field">
+                    <label class="config-label" for="geminiKey">Gemini API Key</label>
+                    <input 
+                        type="password" 
+                        id="geminiKey" 
+                        class="config-input" 
+                        placeholder="your-gemini-key..."
+                        autocomplete="off"
+                    >
                 </div>
                 
-                <!-- Chat Container for conversation history -->
-                <div id="chatContainer"></div>
-                
-                <div class="audio-container hidden">
-                    <audio id="audioPlayback" controls></audio>
-                </div>
-                <!-- Day 21: Audio Streaming Panel -->
-                <div id="audioStreamCard" class="stream-card hidden">
-                    <div class="stream-card-header">
-                        <h3>Audio Streaming</h3>
-                        <span id="streamStatus" class="pill pill-waiting">Waiting</span>
-                    </div>
-                    <div class="stream-stats">
-                        <div class="stat">
-                            <div class="stat-label">Chunks</div>
-                            <div id="streamChunkCount" class="stat-value">0</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-label">Total (chars)</div>
-                            <div id="streamTotalChars" class="stat-value">0</div>
-                        </div>
-                    </div>
-                    <div id="streamChunksList" class="stream-chunks"></div>
-                </div>
-                <div id="transcribeContainer" class="hidden">
-                    <button id="transcribeBtn" type="button" class="hidden-button">Re-process Echo</button>
-                    <p id="transcribingStatus" class="hidden">Processing echo...</p>
-                </div>
-                <div id="transcriptionResult" class="result hidden">
-                    <h3 id="resultTitle">What you said:</h3>
-                    <p id="transcriptionText"></p>
-                    <div id="llmResponseSection" class="hidden">
-                        <h3>AI Response:</h3>
-                        <p id="llmResponseText"></p>
-                    </div>
-                    <div id="chatInfo" class="hidden">
-                        <p><small>Messages in conversation: <span id="messageCount">0</span></small></p>
-                    </div>
+                <div class="config-field">
+                    <label class="config-label" for="assemblyaiKey">AssemblyAI API Key</label>
+                    <input 
+                        type="password" 
+                        id="assemblyaiKey" 
+                        class="config-input" 
+                        placeholder="your-assemblyai-key..."
+                        autocomplete="off"
+                    >
                 </div>
                 
-                <div id="error" class="error hidden">
-                    <h3>Error</h3>
-                    <p id="errorMessage"></p>
+                <div class="config-field">
+                    <label class="config-label" for="murfaiKey">MurfAI API Key</label>
+                    <input 
+                        type="password" 
+                        id="murfaiKey" 
+                        class="config-input" 
+                        placeholder="your-murfai-key..."
+                        autocomplete="off"
+                    >
                 </div>
             </div>
-
             
-        </main>
+            <div class="config-section">
+                <h3 class="config-section-title">
+                    🎭 Voice Settings
+                </h3>
+                
+                <div class="config-field">
+                    <label class="config-label" for="voiceModel">Voice Model</label>
+                    <select id="voiceModel" class="config-input">
+                        <option value="eleven_monolingual_v1">Monolingual v1</option>
+                        <option value="eleven_multilingual_v1">Multilingual v1</option>
+                        <option value="eleven_multilingual_v2" selected>Multilingual v2</option>
+                        <option value="eleven_turbo_v2">Turbo v2</option>
+                    </select>
+                </div>
+                
+                <div class="config-field">
+                    <label class="config-label" for="voiceId">Voice ID</label>
+                    <select id="voiceId" class="config-input">
+                        <option value="21m00Tcm4TlvDq8ikWAM" selected>Rachel (Calm)</option>
+                        <option value="AZnzlk1XvdvUeBnXmlld">Domi (Strong)</option>
+                        <option value="EXAVITQu4vr4xnSDxMaL">Bella (Sweet)</option>
+                        <option value="ErXwobaYiN019PkySvjV">Antoni (Well-rounded)</option>
+                        <option value="MF3mGyEYCl7XYWbV9V6O">Elli (Emotional)</option>
+                        <option value="TxGEqnHWrfWFTfGW9XjX">Josh (Deep)</option>
+                        <option value="VR6AewLTigWG4xSOukaG">Arnold (Crisp)</option>
+                        <option value="pNInz6obpgDQGcFmaJgB">Adam (Deep)</option>
+                        <option value="yoZ06aMxZJJ28mfd3POQ">Sam (Raspy)</option>
+                    </select>
+                </div>
+                
+                <div class="config-field">
+                    <label class="config-label">Voice Stability: <span id="stabilityValue">0.75</span></label>
+                    <input 
+                        type="range" 
+                        id="voiceStability" 
+                        class="config-input" 
+                        min="0" 
+                        max="1" 
+                        step="0.01" 
+                        value="0.75"
+                        style="height: 6px; background: linear-gradient(to right, var(--primary-purple), var(--accent-gold));"
+                    >
+                </div>
+                
+                <div class="config-field">
+                    <label class="config-label">Voice Clarity: <span id="clarityValue">0.5</span></label>
+                    <input 
+                        type="range" 
+                        id="voiceClarity" 
+                        class="config-input" 
+                        min="0" 
+                        max="1" 
+                        step="0.01" 
+                        value="0.5"
+                        style="height: 6px; background: linear-gradient(to right, var(--primary-purple), var(--accent-gold));"
+                    >
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3 class="config-section-title">
+                    🧠 AI Settings
+                </h3>
+                
+                <div class="config-field">
+                    <label class="config-label" for="aiModel">AI Model</label>
+                    <select id="aiModel" class="config-input">
+                        <option value="gemini-1.5-flash" selected>Gemini 1.5 Flash</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-1.0-pro">Gemini 1.0 Pro</option>
+                    </select>
+                </div>
+                
+                <div class="config-field">
+                    <label class="config-label">AI Temperature: <span id="temperatureValue">0.7</span></label>
+                    <input 
+                        type="range" 
+                        id="aiTemperature" 
+                        class="config-input" 
+                        min="0" 
+                        max="2" 
+                        step="0.1" 
+                        value="0.7"
+                        style="height: 6px; background: linear-gradient(to right, var(--primary-purple), var(--accent-gold));"
+                    >
+                </div>
+                
+                <div class="config-field">
+                    <label class="config-label">Max Response Tokens: <span id="maxTokensValue">150</span></label>
+                    <input 
+                        type="range" 
+                        id="maxTokens" 
+                        class="config-input" 
+                        min="50" 
+                        max="500" 
+                        step="25" 
+                        value="150"
+                        style="height: 6px; background: linear-gradient(to right, var(--primary-purple), var(--accent-gold));"
+                    >
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3 class="config-section-title">
+                    ⚡ Experience Settings
+                </h3>
+                
+                <div class="config-toggle">
+                    <div class="toggle-switch" id="autoPlayToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <label class="config-label">Auto-play responses</label>
+                </div>
+                
+                <div class="config-toggle">
+                    <div class="toggle-switch active" id="particlesToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <label class="config-label">Mystical particles</label>
+                </div>
+                
+                <div class="config-toggle">
+                    <div class="toggle-switch active" id="animationsToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <label class="config-label">Magical animations</label>
+                </div>
+                
+                <div class="config-toggle">
+                    <div class="toggle-switch" id="keyboardShortcutsToggle">
+                        <div class="toggle-knob"></div>
+                    </div>
+                    <label class="config-label">Keyboard shortcuts</label>
+                </div>
+            </div>
+            
+            <div class="config-buttons">
+                <button class="config-btn" onclick="saveConfiguration()">💾 Save Config</button>
+                <button class="config-btn secondary" onclick="resetConfiguration()">🔄 Reset</button>
+            </div>
+            
+            <div class="config-buttons" style="margin-top: 15px;">
+                <button class="config-btn secondary" onclick="exportConfiguration()">📤 Export</button>
+                <button class="config-btn secondary" onclick="importConfiguration()">📥 Import</button>
+            </div>
+        </div>
     </div>
     
-    <!-- Lightweight Transcriber (separate from main streaming) -->
-    <div class="container" style="margin-top: 24px;">
-        <main>
-            <div class="voice-agent">
-                <h2 style="margin-top: 8px;">Quick Transcribe</h2>
-                <p style="margin: 0 0 10px 0; color: #666;">Record or upload audio, then see the transcription appear as labeled chunks.</p>
-                <div style="display:flex; gap:10px; flex-wrap: wrap; align-items:center; margin-bottom:10px;">
-                    <button id="transcribeStartBtn" type="button" style="background:#1976d2;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;">Start Transcription Recording</button>
-                    <button id="transcribeStopBtn" type="button" style="background:#d32f2f;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;" disabled>Stop</button>
-                    <button id="transcribeClearBtn" type="button" style="background:#607d8b;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;">Clear</button>
-                    <input id="transcribeFileInput" type="file" accept="audio/*" style="display:inline-block;" />
-                    <button id="transcribeUploadBtn" type="button" style="background:#009688;color:#fff;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;">Transcribe File</button>
+    <div class="container" id="mainContainer">
+        <div class="header magical-border">
+            <h1 class="wizard-title">🧙‍♂️ Arcanus the Wise</h1>
+            <p class="wizard-subtitle">"Ancient Wisdom Through Modern Magic"</p>
+            <div class="persona-info">
+                <span class="trait-badge">✨ Mystical</span>
+                <span class="trait-badge">📚 Knowledgeable</span>
+                <span class="trait-badge">🎭 Theatrical</span>
+                <span class="trait-badge">🧘‍♂️ Patient</span>
+                <span class="trait-badge">💫 Encouraging</span>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="panel magical-border">
+                <h2 class="panel-title">
+                    <span class="crystal-orb"></span>
+                    Voice Oracle
+                    <span class="crystal-orb"></span>
+                </h2>
+                <div class="voice-controls">
+                    <button class="record-btn" id="recordBtn">
+                        🎤<br>Speak to<br>Arcanus
+                    </button>
+                    <div class="status-indicator" id="statusIndicator">
+                        ✨ Ready to receive your wisdom-seeking words...
+                    </div>
+                    <div class="control-buttons">
+                        <button class="demo-btn" onclick="playDemo()">🎭 Persona Demo</button>
+                        <button class="greeting-btn" onclick="playGreeting()">👋 Mystical Greeting</button>
+                    </div>
                 </div>
-                <div id="transcribeStatus" style="min-height: 20px; color:#555; font-style:italic; margin-bottom:8px;"></div>
-                <div id="transcribeLabels" style="display:flex; flex-direction:column; gap:8px;"></div>
-                <!-- LLM Output section with audio playback -->
-                <div id="qtLLMSection" class="qt-llm hidden" style="margin-top:12px;">
-                    <h3 class="qt-llm-title">LLM Output</h3>
-                    <div id="qtLLMText" class="qt-llm-text"></div>
-                    <audio id="qtLLMAudio" controls style="width:100%; margin-top:8px;"></audio>
+                
+                <div class="file-upload">
+                    <input type="file" id="audioFile" class="file-input" accept="audio/*">
+                    <label for="audioFile" class="file-label">
+                        📜 Upload Audio Scroll
+                    </label>
                 </div>
             </div>
-        </main>
+            
+            <div class="panel magical-border">
+                <h2 class="panel-title">
+                    <span class="crystal-orb"></span>
+                    Ancient Chronicles
+                    <span class="crystal-orb"></span>
+                </h2>
+                <div class="chat-display" id="chatDisplay">
+                    <div class="message assistant-message">
+                        <div class="message-header">🧙‍♂️ Arcanus the Wise</div>
+                        <div class="message-content">
+                            Greetings, noble seeker! I am Arcanus, keeper of ancient wisdom and mystical knowledge. 
+                            The cosmic energies have aligned to bring you to my digital realm. 
+                            What mysteries of the universe shall we explore together today?
+                            <br><br>
+                            <strong>🎯 Quick Start:</strong> Configure your API keys using the ⚙️ button above, then speak your questions!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p class="footer-quote">✨ "In wisdom we trust, through magic we speak" ✨</p>
+            <p>AI Voice Agent with Wizard Persona • Enhanced Configuration System</p>
+            <p style="margin-top: 10px; font-size: 0.8rem; opacity: 0.7;">
+                🔮 Press SPACE to record • ESC to stop • ⚙️ for settings
+            </p>
+        </div>
     </div>
-
-    <script src="/static/script.js?v=3.1.0"></script>
+    
+    <div id="notificationContainer"></div>
+    
+    <input type="file" id="configImportInput" accept=".json" style="display: none;">
+    
+    <script>
+        // ===== GLOBAL VARIABLES =====
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+        let sessionId = `session_${Date.now()}`;
+        let currentConfig = {
+            apiKeys: {
+                gemini: '',
+                assemblyai: '',
+                murfai: ''
+            },
+            voice: {
+                model: 'eleven_multilingual_v2',
+                voiceId: '21m00Tcm4TlvDq8ikWAM',
+                stability: 0.75,
+                clarity: 0.5
+            },
+            ai: {
+                model: 'gemini-1.5-flash',
+                temperature: 0.7,
+                maxTokens: 150
+            },
+            experience: {
+                autoPlay: false,
+                particles: true,
+                animations: true,
+                keyboardShortcuts: false
+            }
+        };
+        
+        // ===== INITIALIZATION =====
+        window.addEventListener('load', () => {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            loadConfiguration();
+            createParticles();
+            setupEventListeners();
+            updateConfigUI();
+            showWelcomeNotification();
+        }
+        
+        function showWelcomeNotification() {
+            setTimeout(() => {
+                showNotification('🎉 Welcome to Arcanus the Wise! Configure your API keys to begin.', 'success', 5000);
+            }, 1000);
+        }
+        
+        // ===== PARTICLES SYSTEM =====
+        function createParticles() {
+            if (!currentConfig.experience.particles) return;
+            
+            const particlesContainer = document.getElementById('particles');
+            
+            function createParticle() {
+                if (!currentConfig.experience.particles) return;
+                
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 6 + 6) + 's';
+                
+                // Random particle colors
+                const colors = ['#ffd700', '#8a2be2', '#4b0082', '#daa520'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particlesContainer.appendChild(particle);
+                
+                // Remove particle after animation
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, 12000);
+            }
+            
+            // Create particles periodically
+            const particleInterval = setInterval(() => {
+                if (currentConfig.experience.particles) {
+                    createParticle();
+                } else {
+                    clearInterval(particleInterval);
+                }
+            }, 1500);
+        }
+        
+        // ===== EVENT LISTENERS =====
+        function setupEventListeners() {
+            // Main controls
+            document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+            document.getElementById('audioFile').addEventListener('change', handleFileUpload);
+            
+            // Configuration sidebar
+            document.getElementById('configToggleBtn').addEventListener('click', toggleConfigSidebar);
+            
+            // Configuration inputs
+            document.getElementById('geminiKey').addEventListener('change', updateApiKey);
+            document.getElementById('assemblyaiKey').addEventListener('change', updateApiKey);
+            document.getElementById('murfaiKey').addEventListener('change', updateApiKey);
+            
+            // Voice settings
+            document.getElementById('voiceModel').addEventListener('change', updateVoiceSettings);
+            document.getElementById('voiceId').addEventListener('change', updateVoiceSettings);
+            document.getElementById('voiceStability').addEventListener('input', updateVoiceSettings);
+            document.getElementById('voiceClarity').addEventListener('input', updateVoiceSettings);
+            
+            // AI settings
+            document.getElementById('aiModel').addEventListener('change', updateAiSettings);
+            document.getElementById('aiTemperature').addEventListener('input', updateAiSettings);
+            document.getElementById('maxTokens').addEventListener('input', updateAiSettings);
+            
+            // Experience toggles
+            document.getElementById('autoPlayToggle').addEventListener('click', () => toggleSetting('autoPlay'));
+            document.getElementById('particlesToggle').addEventListener('click', () => toggleSetting('particles'));
+            document.getElementById('animationsToggle').addEventListener('click', () => toggleSetting('animations'));
+            document.getElementById('keyboardShortcutsToggle').addEventListener('click', () => toggleSetting('keyboardShortcuts'));
+            
+            // Configuration import
+            document.getElementById('configImportInput').addEventListener('change', handleConfigImport);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+            
+            // Close sidebar when clicking outside
+            document.addEventListener('click', (event) => {
+                const sidebar = document.getElementById('configSidebar');
+                const toggleBtn = document.getElementById('configToggleBtn');
+                
+                if (!sidebar.contains(event.target) && event.target !== toggleBtn && sidebar.classList.contains('open')) {
+                    toggleConfigSidebar();
+                }
+            });
+        }
+        
+        function handleKeyboardShortcuts(event) {
+            if (!currentConfig.experience.keyboardShortcuts) return;
+            
+            if (event.key === ' ' && event.target.tagName !== 'INPUT' && event.target.tagName !== 'SELECT') {
+                event.preventDefault();
+                toggleRecording();
+            }
+            if (event.key === 'Escape' && isRecording) {
+                stopRecording();
+            }
+            if (event.key === 'g' && event.ctrlKey) {
+                event.preventDefault();
+                playGreeting();
+            }
+            if (event.key === 'd' && event.ctrlKey) {
+                event.preventDefault();
+                playDemo();
+            }
+        }
+        
+        // ===== CONFIGURATION SYSTEM =====
+        function toggleConfigSidebar() {
+            const sidebar = document.getElementById('configSidebar');
+            const toggleBtn = document.getElementById('configToggleBtn');
+            const mainContainer = document.getElementById('mainContainer');
+            
+            sidebar.classList.toggle('open');
+            toggleBtn.classList.toggle('active');
+            mainContainer.classList.toggle('sidebar-open');
+        }
+        
+        function updateConfigUI() {
+            // API Keys
+            document.getElementById('geminiKey').value = currentConfig.apiKeys.gemini;
+            document.getElementById('assemblyaiKey').value = currentConfig.apiKeys.assemblyai;
+            document.getElementById('murfaiKey').value = currentConfig.apiKeys.murfai;
+            
+            // Voice settings
+            document.getElementById('voiceModel').value = currentConfig.voice.model;
+            document.getElementById('voiceId').value = currentConfig.voice.voiceId;
+            document.getElementById('voiceStability').value = currentConfig.voice.stability;
+            document.getElementById('voiceClarity').value = currentConfig.voice.clarity;
+            document.getElementById('stabilityValue').textContent = currentConfig.voice.stability;
+            document.getElementById('clarityValue').textContent = currentConfig.voice.clarity;
+            
+            // AI settings
+            document.getElementById('aiModel').value = currentConfig.ai.model;
+            document.getElementById('aiTemperature').value = currentConfig.ai.temperature;
+            document.getElementById('maxTokens').value = currentConfig.ai.maxTokens;
+            document.getElementById('temperatureValue').textContent = currentConfig.ai.temperature;
+            document.getElementById('maxTokensValue').textContent = currentConfig.ai.maxTokens;
+            
+            // Experience toggles
+            updateToggleState('autoPlayToggle', currentConfig.experience.autoPlay);
+            updateToggleState('particlesToggle', currentConfig.experience.particles);
+            updateToggleState('animationsToggle', currentConfig.experience.animations);
+            updateToggleState('keyboardShortcutsToggle', currentConfig.experience.keyboardShortcuts);
+        }
+        
+        function updateToggleState(toggleId, state) {
+            const toggle = document.getElementById(toggleId);
+            if (state) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+        
+        function updateApiKey(event) {
+            const keyType = event.target.id.replace('Key', '');
+            currentConfig.apiKeys[keyType] = event.target.value;
+            saveConfiguration();
+        }
+        
+        function updateVoiceSettings(event) {
+            const setting = event.target.id.replace('voice', '').toLowerCase();
+            let value = event.target.value;
+            
+            if (setting === 'stability' || setting === 'clarity') {
+                value = parseFloat(value);
+                document.getElementById(setting + 'Value').textContent = value;
+            }
+            
+            switch(setting) {
+                case 'model':
+                    currentConfig.voice.model = value;
+                    break;
+                case 'id':
+                    currentConfig.voice.voiceId = value;
+                    break;
+                case 'stability':
+                    currentConfig.voice.stability = value;
+                    break;
+                case 'clarity':
+                    currentConfig.voice.clarity = value;
+                    break;
+            }
+            
+            saveConfiguration();
+        }
+        
+        function updateAiSettings(event) {
+            const setting = event.target.id.replace('ai', '').toLowerCase();
+            let value = event.target.value;
+            
+            switch(setting) {
+                case 'model':
+                    currentConfig.ai.model = value;
+                    break;
+                case 'temperature':
+                    value = parseFloat(value);
+                    currentConfig.ai.temperature = value;
+                    document.getElementById('temperatureValue').textContent = value;
+                    break;
+                case 'maxtokens':
+                    value = parseInt(value);
+                    currentConfig.ai.maxTokens = value;
+                    document.getElementById('maxTokensValue').textContent = value;
+                    break;
+            }
+            
+            saveConfiguration();
+        }
+        
+        function toggleSetting(setting) {
+            currentConfig.experience[setting] = !currentConfig.experience[setting];
+            updateToggleState(setting + 'Toggle', currentConfig.experience[setting]);
+            
+            // Handle special cases
+            if (setting === 'particles') {
+                if (currentConfig.experience.particles) {
+                    createParticles();
+                } else {
+                    // Clear existing particles
+                    const particles = document.getElementById('particles');
+                    particles.innerHTML = '';
+                }
+            }
+            
+            if (setting === 'animations') {
+                document.body.style.setProperty('--animation-play-state', 
+                    currentConfig.experience.animations ? 'running' : 'paused');
+            }
+            
+            saveConfiguration();
+        }
+        
+        function saveConfiguration() {
+            try {
+                localStorage.setItem('arcanusConfig', JSON.stringify(currentConfig));
+                showNotification('⚡ Configuration saved successfully!', 'success', 2000);
+            } catch (error) {
+                console.error('Failed to save configuration:', error);
+                showNotification('❌ Failed to save configuration', 'error', 3000);
+            }
+        }
+        
+        function loadConfiguration() {
+            try {
+                const saved = localStorage.getItem('arcanusConfig');
+                if (saved) {
+                    const parsedConfig = JSON.parse(saved);
+                    // Deep merge to avoid issues with new/missing keys
+                    currentConfig = {
+                        ...currentConfig,
+                        apiKeys: { ...currentConfig.apiKeys, ...parsedConfig.apiKeys },
+                        voice: { ...currentConfig.voice, ...parsedConfig.voice },
+                        ai: { ...currentConfig.ai, ...parsedConfig.ai },
+                        experience: { ...currentConfig.experience, ...parsedConfig.experience }
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to load configuration:', error);
+            }
+        }
+        
+        function resetConfiguration() {
+            if (confirm('🔮 Are you sure you want to reset all settings to defaults?')) {
+                currentConfig = {
+                    apiKeys: { gemini: '', assemblyai: '', murfai: '' },
+                    voice: { model: 'eleven_multilingual_v2', voiceId: '21m00Tcm4TlvDq8ikWAM', stability: 0.75, clarity: 0.5 },
+                    ai: { model: 'gemini-1.5-flash', temperature: 0.7, maxTokens: 150 },
+                    experience: { autoPlay: false, particles: true, animations: true, keyboardShortcuts: false }
+                };
+                updateConfigUI();
+                saveConfiguration();
+                showNotification('🔄 Configuration reset to defaults', 'success', 3000);
+            }
+        }
+        
+        function exportConfiguration() {
+            try {
+                const configBlob = new Blob([JSON.stringify(currentConfig, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(configBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `arcanus-config-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification('📤 Configuration exported successfully!', 'success', 3000);
+            } catch (error) {
+                console.error('Export failed:', error);
+                showNotification('❌ Failed to export configuration', 'error', 3000);
+            }
+        }
+        
+        function importConfiguration() {
+            document.getElementById('configImportInput').click();
+        }
+        
+        function handleConfigImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedConfig = JSON.parse(e.target.result);
+                    currentConfig = { ...currentConfig, ...importedConfig };
+                    updateConfigUI();
+                    saveConfiguration();
+                    showNotification('📥 Configuration imported successfully!', 'success', 3000);
+                } catch (error) {
+                    console.error('Import failed:', error);
+                    showNotification('❌ Failed to import configuration', 'error', 3000);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset file input
+        }
+        
+        // ===== NOTIFICATION SYSTEM =====
+        function showNotification(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            
+            container.appendChild(notification);
+            
+            // Show notification
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            // Hide and remove notification
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (container.contains(notification)) {
+                        container.removeChild(notification);
+                    }
+                }, 400);
+            }, duration);
+        }
+        
+        // ===== STATUS AND UI UPDATES =====
+        function updateStatus(message, type = '') {
+            const indicator = document.getElementById('statusIndicator');
+            indicator.textContent = message;
+            indicator.className = `status-indicator ${type}`;
+        }
+        
+        function addMessage(role, content, hasAudio = false, audioUrl = null) {
+            const chatDisplay = document.getElementById('chatDisplay');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}-message`;
+            
+            const roleIcon = role === 'user' ? '🗣️' : '🧙‍♂️';
+            const roleName = role === 'user' ? 'You' : 'Arcanus the Wise';
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">${roleIcon} ${roleName}</div>
+                <div class="message-content">${content}</div>
+                ${audioUrl ? `<audio controls class="audio-player" src="${audioUrl}"></audio>` : ''}
+            `;
+            
+            chatDisplay.appendChild(messageDiv);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            
+            // Auto-play audio if enabled and available
+            if (audioUrl && role === 'assistant' && currentConfig.experience.autoPlay) {
+                setTimeout(() => {
+                    const audio = messageDiv.querySelector('audio');
+                    if (audio) {
+                        audio.play().catch(e => console.log('Auto-play prevented:', e));
+                    }
+                }, 500);
+            }
+        }
+        
+        // ===== RECORDING FUNCTIONALITY =====
+        async function toggleRecording() {
+            if (!validateApiKeys()) {
+                showNotification('🔑 Please configure your API keys first!', 'error', 4000);
+                toggleConfigSidebar();
+                return;
+            }
+            
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                await stopRecording();
+            }
+        }
+        
+        function validateApiKeys() {
+            return currentConfig.apiKeys.gemini && 
+                   currentConfig.apiKeys.assemblyai && 
+                   currentConfig.apiKeys.murfai;
+        }
+        
+        async function startRecording() {
+            try {
+                updateStatus("🔮 The mystical listening crystals are awakening...", "status-listening");
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await processAudio(audioBlob);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.add('recording');
+                recordBtn.innerHTML = '⏹️<br>Stop<br>Recording';
+                updateStatus("🎤 Listening to your words of wisdom...", "status-listening");
+                
+            } catch (error) {
+                console.error('Recording error:', error);
+                updateStatus("❌ The listening crystals are clouded. Please grant microphone access.", "");
+                showNotification('🎤 Microphone access required for voice recording', 'error', 4000);
+            }
+        }
+        
+        async function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                
+                const recordBtn = document.getElementById('recordBtn');
+                recordBtn.classList.remove('recording');
+                recordBtn.innerHTML = '🎤<br>Speak to<br>Arcanus';
+                updateStatus("⚡ Deciphering your mystical message...", "status-processing");
+            }
+        }
+        
+        // ===== AUDIO PROCESSING =====
+        async function processAudio(audioBlob) {
+            try {
+                updateStatus("📜 The ancient scrolls of knowledge are being consulted...", "status-processing");
+                
+                const formData = new FormData();
+                formData.append('file', audioBlob, 'recording.wav');
+                
+                // Add configuration to the request
+                formData.append('config', JSON.stringify(currentConfig));
+                
+                const response = await fetch(`/agent/chat/${sessionId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Add user message
+                addMessage('user', result.transcription);
+                
+                // Add assistant response
+                addMessage('assistant', result.llm_response, true, result.audio_url);
+                
+                updateStatus("✨ The wisdom has been shared! Speak again when ready...", "");
+                showNotification('🎉 Message processed successfully!', 'success', 2000);
+                
+            } catch (error) {
+                console.error('Processing error:', error);
+                updateStatus("⚠️ The mystical energies are in flux. Please try again, dear seeker.", "");
+                addMessage('assistant', 'Alas, the cosmic forces interfere with our communication. Please check your API keys and try speaking again, noble seeker.');
+                showNotification('❌ Failed to process audio. Check your API keys.', 'error', 4000);
+            }
+        }
+        
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!validateApiKeys()) {
+                showNotification('🔑 Please configure your API keys first!', 'error', 4000);
+                toggleConfigSidebar();
+                return;
+            }
+            
+            updateStatus("📜 Reading the uploaded scroll...", "status-processing");
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/agent/chat/${sessionId}', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                addMessage('user', result.transcription + " (from uploaded scroll)");
+                
+                if (result.llm_response) {
+                    addMessage('assistant', result.llm_response, true, result.audio_url);
+                }
+                
+                updateStatus("📜 The scroll has been deciphered successfully!", "");
+                showNotification('📜 Audio file processed successfully!', 'success', 3000);
+                
+            } catch (error) {
+                console.error('File upload error:', error);
+                updateStatus("❌ The scroll appears to be written in an unknown dialect...", "");
+                showNotification('❌ Failed to process audio file. Check your API keys.', 'error', 4000);
+            }
+            
+            // Reset file input
+            event.target.value = '';
+        }
+        
+        // ===== PERSONA DEMOS =====
+        async function playDemo() {
+            if (!validateApiKeys()) {
+                showNotification('🔑 Please configure your API keys first!', 'error', 4000);
+                toggleConfigSidebar();
+                return;
+            }
+            
+            updateStatus("🎭 Preparing the grand demonstration...", "status-processing");
+            
+            try {
+                const response = await fetch('/persona/demo', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentConfig)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                addMessage('assistant', result.demo_message, true, result.audio_url);
+                updateStatus("✨ The demonstration is complete!", "");
+                showNotification('🎭 Persona demonstration complete!', 'success', 3000);
+                
+            } catch (error) {
+                console.error('Demo error:', error);
+                updateStatus("❌ The demonstration spell has encountered interference...", "");
+                showNotification('❌ Failed to play demo. Check your API keys.', 'error', 4000);
+            }
+        }
+        
+        async function playGreeting() {
+            if (!validateApiKeys()) {
+                showNotification('🔑 Please configure your API keys first!', 'error', 4000);
+                toggleConfigSidebar();
+                return;
+            }
+            
+            updateStatus("👋 Summoning a mystical greeting...", "status-processing");
+            
+            try {
+                const response = await fetch('/persona/greeting', {
+                    method: 'GET',
+                     headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                addMessage('assistant', result.greeting, true, result.audio_url);
+                updateStatus("✨ The greeting has been bestowed!", "");
+                showNotification('👋 Mystical greeting delivered!', 'success', 3000);
+                
+            } catch (error) {
+                console.error('Greeting error:', error);
+                updateStatus("❌ The greeting spell needs more mystical energy...", "");
+                showNotification('❌ Failed to play greeting. Check your API keys.', 'error', 4000);
+            }
+        }
+        
+        // ===== ENHANCED FEATURES =====
+        
+        // Voice command recognition for common phrases
+        function processVoiceCommand(transcription) {
+            const command = transcription.toLowerCase().trim();
+            
+            if (command.includes('clear chat') || command.includes('clear history')) {
+                clearChatHistory();
+                return true;
+            }
+            
+            if (command.includes('play greeting') || command.includes('say hello')) {
+                playGreeting();
+                return true;
+            }
+            
+            if (command.includes('show demo') || command.includes('play demo')) {
+                playDemo();
+                return true;
+            }
+            
+            if (command.includes('open settings') || command.includes('show config')) {
+                toggleConfigSidebar();
+                return true;
+            }
+            
+            return false;
+        }
+        
+        function clearChatHistory() {
+            const chatDisplay = document.getElementById('chatDisplay');
+            chatDisplay.innerHTML = `
+                <div class="message assistant-message">
+                    <div class="message-header">🧙‍♂️ Arcanus the Wise</div>
+                    <div class="message-content">
+                        The ancient chronicles have been cleared, noble seeker. 
+                        A fresh scroll awaits your wisdom-seeking words!
+                    </div>
+                </div>
+            `;
+            showNotification('📜 Chat history cleared', 'success', 2000);
+        }
+        
+        // Advanced status management
+        function setAdvancedStatus(type, message, duration = 0) {
+            updateStatus(message, type);
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    updateStatus("✨ Ready for your next mystical inquiry...", "");
+                }, duration);
+            }
+        }
+        
+        // Connection status monitoring
+        function checkConnectionStatus() {
+            const status = navigator.onLine ? 'online' : 'offline';
+            
+            if (status === 'offline') {
+                showNotification('📡 Connection lost. Please check your internet connection.', 'error', 5000);
+                updateStatus("📡 Mystical connection severed...", "");
+            }
+        }
+        
+        // Monitor connection status
+        window.addEventListener('online', () => {
+            showNotification('📡 Mystical connection restored!', 'success', 3000);
+            updateStatus("✨ Ready to receive your wisdom-seeking words...", "");
+        });
+        
+        window.addEventListener('offline', () => {
+            checkConnectionStatus();
+        });
+        
+        // ===== ACCESSIBILITY ENHANCEMENTS =====
+        
+        // Focus management for keyboard navigation
+        function setupAccessibility() {
+            const focusableElements = [
+                '#recordBtn',
+                '#configToggleBtn',
+                '.demo-btn',
+                '.greeting-btn',
+                '#audioFile'
+            ];
+            
+            focusableElements.forEach(selector => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.setAttribute('tabindex', '0');
+                }
+            });
+        }
+        
+        // Screen reader announcements
+        function announceToScreenReader(message) {
+            const announcement = document.createElement('div');
+            announcement.setAttribute('aria-live', 'polite');
+            announcement.setAttribute('aria-atomic', 'true');
+            announcement.style.position = 'absolute';
+            announcement.style.left = '-10000px';
+            announcement.style.width = '1px';
+            announcement.style.height = '1px';
+            announcement.style.overflow = 'hidden';
+            announcement.textContent = message;
+            
+            document.body.appendChild(announcement);
+            
+            setTimeout(() => {
+                document.body.removeChild(announcement);
+            }, 1000);
+        }
+        
+        // ===== PERFORMANCE OPTIMIZATION =====
+        
+        // Debounce function for frequent events
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Throttle function for scroll events
+        function throttle(func, limit) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            }
+        }
+        
+        // ===== FINAL INITIALIZATION =====
+        
+        // Enhanced initialization with error handling
+        function enhancedInit() {
+            try {
+                setupAccessibility();
+                checkConnectionStatus();
+                
+                // Add enhanced keyboard shortcuts hint
+                setTimeout(() => {
+                    if (currentConfig.experience.keyboardShortcuts) {
+                        addMessage('assistant', 
+                            '🎯 <strong>Enhanced Controls Active:</strong><br>' +
+                            '• <kbd>SPACE</kbd> - Start/Stop recording<br>' +
+                            '• <kbd>ESC</kbd> - Stop recording<br>' +
+                            '• <kbd>Ctrl+G</kbd> - Play greeting<br>' +
+                            '• <kbd>Ctrl+D</kbd> - Play demo<br>' +
+                            '• Say "clear chat", "open settings", or "play demo" for voice commands!'
+                        );
+                    } else {
+                        addMessage('assistant', 
+                            '💡 <strong>Quick Tip:</strong> Enable keyboard shortcuts in settings ⚙️ for enhanced controls! ' +
+                            'You can also use voice commands like "clear chat" or "open settings".'
+                        );
+                    }
+                }, 3000);
+                
+                // Performance monitoring
+                if (performance.mark) {
+                    performance.mark('app-initialized');
+                }
+                
+            } catch (error) {
+                console.error('Enhanced initialization error:', error);
+                showNotification('⚠️ Some features may not work properly', 'error', 4000);
+            }
+        }
+        
+        // Call enhanced initialization
+        setTimeout(enhancedInit, 100);
+        
+        // ===== ERROR BOUNDARY =====
+        window.addEventListener('error', (event) => {
+            console.error('Global error caught:', event.error);
+            showNotification('⚠️ An unexpected error occurred. Please refresh if issues persist.', 'error', 5000);
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            showNotification('⚠️ A network error occurred. Please check your connection.', 'error', 5000);
+        });
+        
+        // ===== EXPORT FUNCTIONS FOR CONSOLE ACCESS =====
+        window.arcanusDebug = {
+            config: currentConfig,
+            saveConfig: saveConfiguration,
+            loadConfig: loadConfiguration,
+            showNotification: showNotification,
+            clearChat: clearChatHistory,
+            testDemo: playDemo,
+            testGreeting: playGreeting
+        };
+        
+        console.log('🧙‍♂️ Arcanus the Wise is ready! Type arcanusDebug in console for debug tools.');
+    </script>
 </body>
 </html>

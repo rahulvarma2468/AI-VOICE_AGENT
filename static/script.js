@@ -1,4 +1,4 @@
-// Fixed recording functionality for the voice agent
+// Enhanced recording functionality with automatic turn detection
 document.addEventListener('DOMContentLoaded', function() {
     // Voice recording elements
     const recordBtn = document.getElementById('recordBtn');
@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatContainer = document.getElementById('chatContainer');
     const error = document.getElementById('error');
     
+    // Persona elements
+    const personaNameEl = document.getElementById('personaName');
+    const getGreetingBtn = document.getElementById('getGreetingBtn');
+
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
@@ -16,21 +20,217 @@ document.addEventListener('DOMContentLoaded', function() {
     let websocket = null;
     let currentTranscriptDiv = null;
     let fallbackCheckInterval = null;
-    // For Day 21: accumulate streamed base64 audio chunks from server
+
+    // Voice Activity Detection variables
+    let audioContext = null;
+    let analyser = null;
+    let dataArray = null;
+    let silenceThreshold = -50; // dB threshold for silence
+    let silenceDuration = 2000; // ms of silence before auto-stop
+    let lastSoundTime = 0;
+    let vadCheckInterval = null;
+
+    // ============================
+    // PERSONA FUNCTIONS
+    // ============================
+    async function fetchPersonaInfo() {
+        try {
+            const response = await fetch('/persona/info');
+            if (response.ok) {
+                const data = await response.json();
+                if (personaNameEl && data.persona) {
+                    personaNameEl.textContent = data.persona.name;
+                }
+            } else {
+                console.error('Failed to fetch persona info');
+                if (personaNameEl) personaNameEl.textContent = 'Unknown';
+            }
+        } catch (e) {
+            console.error('Error fetching persona info:', e);
+            if (personaNameEl) personaNameEl.textContent = 'Error';
+        }
+    }
+
+    async function getPersonaGreeting() {
+        try {
+            const response = await fetch('/persona/greeting');
+            if (response.ok) {
+                const data = await response.json();
+                if (data.audio_url) {
+                    const audio = new Audio(data.audio_url);
+                    audio.play().catch(e => console.error("Audio playback failed:", e));
+                }
+                if (data.greeting) {
+                    addMessageToHistory(currentSessionId, 'assistant', data.greeting);
+                }
+            } else {
+                showError('Could not retrieve greeting.');
+            }
+        } catch (e) {
+            showError('Error fetching greeting.');
+            console.error('Error fetching greeting:', e);
+        }
+    }
+
+    if (getGreetingBtn) {
+        getGreetingBtn.addEventListener('click', getPersonaGreeting);
+    }
+
+    // ============================
+    // VOICE ACTIVITY DETECTION
+    // ============================
+    function initVoiceActivityDetection(stream) {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            
+            analyser.fftSize = 512;
+            analyser.minDecibels = -90;
+            analyser.maxDecibels = -10;
+            analyser.smoothingTimeConstant = 0.85;
+            
+            source.connect(analyser);
+            
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+            
+            lastSoundTime = Date.now();
+            
+            // Start monitoring voice activity
+            vadCheckInterval = setInterval(() => {
+                checkVoiceActivity();
+            }, 100); // Check every 100ms
+            
+            console.log('Voice Activity Detection initialized');
+        } catch (error) {
+            console.error('VAD initialization failed:', error);
+        }
+    }
+
+    function checkVoiceActivity() {
+        if (!analyser || !dataArray || !isRecording) return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Calculate average volume
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+        }
+        const average = sum / dataArray.length;
+        
+        // Convert to decibels (approximate)
+        const decibels = 20 * Math.log10(average / 255);
+        
+        // Update recording indicator with volume level
+        updateVolumeIndicator(decibels);
+        
+        if (decibels > silenceThreshold) {
+            // Sound detected
+            lastSoundTime = Date.now();
+        } else {
+            // Check if we've been silent long enough
+            const silentTime = Date.now() - lastSoundTime;
+            if (silentTime > silenceDuration && isRecording) {
+                console.log('Auto-stopping: silence detected for', silentTime, 'ms');
+                stopRecording();
+            }
+        }
+    }
+
+    function updateVolumeIndicator(decibels) {
+        const recordingText = document.getElementById('recordingText');
+        if (recordingText && isRecording) {
+            const volume = Math.max(0, Math.min(100, (decibels + 60) * 2)); // Convert dB to 0-100
+            const volumeBars = Math.floor(volume / 20);
+            const bars = '█'.repeat(volumeBars) + '░'.repeat(5 - volumeBars);
+            recordingText.textContent = `Recording... ${bars} ${volume.toFixed(0)}%`;
+            
+            // Visual feedback on record button
+            const recordDot = document.querySelector('.record-dot');
+            if (recordDot) {
+                const opacity = 0.5 + (volume / 200); // Pulse based on volume
+                recordDot.style.opacity = opacity;
+            }
+        }
+    }
+
+    function stopVoiceActivityDetection() {
+        if (vadCheckInterval) {
+            clearInterval(vadCheckInterval);
+            vadCheckInterval = null;
+        }
+        
+        if (audioContext && audioContext.state !== 'closed') {
+            audioContext.close();
+            audioContext = null;
+        }
+        
+        analyser = null;
+        dataArray = null;
+    }
+
+    // ============================
+    // STREAMING AUDIO PLAYBACK
+    // ============================
+    let streamAudioContext = null;
+    let audioSource = null;
+    let gainNode = null;
+    let audioBufferQueue = [];
+    let isPlaying = false;
+    let nextBufferTime = 0;
     let audioBase64Chunks = [];
-    // Minimal streaming acknowledgement flags
-    // Log once per streaming session
-    let streamAnnounced = false;
-    // UI handles for streaming panel
+    
+    // Audio UI elements
+    const audioContainer = document.getElementById('audioContainer');
+    const audioPlayback = document.getElementById('audioPlayback');
+    const playStreamBtn = document.getElementById('playStreamBtn');
+    const pauseStreamBtn = document.getElementById('pauseStreamBtn');
+    const stopStreamBtn = document.getElementById('stopStreamBtn');
+    const audioPlaybackStatus = document.getElementById('audioPlaybackStatus');
+    const bufferStatus = document.getElementById('bufferStatus');
+    const playbackState = document.getElementById('playbackState');
+
+    // Streaming monitor elements
     const audioStreamCard = document.getElementById('audioStreamCard');
     const streamStatus = document.getElementById('streamStatus');
     const streamChunkCount = document.getElementById('streamChunkCount');
     const streamTotalChars = document.getElementById('streamTotalChars');
+    const streamBufferSize = document.getElementById('streamBufferSize');
     const streamChunksList = document.getElementById('streamChunksList');
+
+    // Minimal streaming acknowledgement flags
+    let streamAnnounced = false;
+
+    function initStreamAudioContext() {
+        if (!streamAudioContext) {
+            streamAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+            gainNode = streamAudioContext.createGain();
+            gainNode.connect(streamAudioContext.destination);
+            gainNode.gain.value = 1.0;
+        }
+        return streamAudioContext;
+    }
+
+    function setAudioContainerVisible(visible) {
+        if (audioContainer) {
+            audioContainer.classList.toggle('hidden', !visible);
+        }
+    }
 
     function setStreamVisible(visible) {
         if (!audioStreamCard) return;
         audioStreamCard.classList.toggle('hidden', !visible);
+    }
+    
+    // Initialize UI - show streaming panel on page load
+    function initializeStreamingUI() {
+        setStreamVisible(true);
+        setStreamStatus('Waiting');
+        updateAudioStatus('Ready');
+        updatePlaybackState('Stopped');
+        updateBufferStatus('Empty');
     }
 
     function setStreamStatus(state) {
@@ -41,15 +241,207 @@ document.addEventListener('DOMContentLoaded', function() {
         else if (state === 'Completed') streamStatus.classList.add('pill-done');
         else streamStatus.classList.add('pill-waiting');
     }
+
+    function updateAudioStatus(status) {
+        if (audioPlaybackStatus) audioPlaybackStatus.textContent = status;
+    }
+
+    function updateBufferStatus(status) {
+        if (bufferStatus) bufferStatus.textContent = status;
+    }
+
+    function updatePlaybackState(state) {
+        if (playbackState) playbackState.textContent = state;
+        
+        // Update button states
+        if (playStreamBtn && pauseStreamBtn && stopStreamBtn) {
+            playStreamBtn.disabled = (state === 'Playing');
+            pauseStreamBtn.disabled = (state !== 'Playing');
+            stopStreamBtn.disabled = (state === 'Stopped');
+        }
+    }
+
+    function updateStreamBufferSize() {
+        if (streamBufferSize) {
+            const totalChars = audioBase64Chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+            const sizeKB = Math.round((totalChars * 0.75) / 1024); // Rough base64 to bytes conversion
+            streamBufferSize.textContent = `${sizeKB} KB`;
+        }
+    }
+
+    async function decodeAudioChunk(base64Data) {
+        try {
+            // Remove data URL prefix if present
+            const audioData = base64Data.replace(/^data:audio\/[^;]+;base64,/, '');
+            
+            // Decode base64 to binary
+            const binaryString = atob(audioData);
+            const arrayBuffer = new ArrayBuffer(binaryString.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            for (let i = 0; i < binaryString.length; i++) {
+                uint8Array[i] = binaryString.charCodeAt(i);
+            }
+            
+            // Decode audio data
+            const audioBuffer = await streamAudioContext.decodeAudioData(arrayBuffer);
+            return audioBuffer;
+        } catch (error) {
+            console.warn('Failed to decode audio chunk:', error);
+            return null;
+        }
+    }
+
+    function scheduleAudioBuffer(audioBuffer) {
+        if (!streamAudioContext || !audioBuffer) return;
+
+        const source = streamAudioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(gainNode);
+
+        const currentTime = streamAudioContext.currentTime;
+        const startTime = Math.max(currentTime, nextBufferTime);
+        
+        source.start(startTime);
+        nextBufferTime = startTime + audioBuffer.duration;
+
+        // Update UI
+        updatePlaybackState('Playing');
+        updateBufferStatus(`${audioBufferQueue.length} chunks queued`);
+
+        source.onended = () => {
+            // Check if more buffers are queued
+            if (audioBufferQueue.length === 0 && nextBufferTime <= streamAudioContext.currentTime + 0.1) {
+                updatePlaybackState('Finished');
+                setTimeout(() => {
+                    if (audioBufferQueue.length === 0) {
+                        stopAudioPlayback();
+                    }
+                }, 500);
+            }
+        };
+    }
+
+    async function processAudioQueue() {
+        while (audioBufferQueue.length > 0 && isPlaying) {
+            const base64Chunk = audioBufferQueue.shift();
+            const audioBuffer = await decodeAudioChunk(base64Chunk);
+            
+            if (audioBuffer && isPlaying) {
+                scheduleAudioBuffer(audioBuffer);
+                // Small delay to prevent overwhelming the audio context
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+        }
+    }
+
+    function startAudioPlayback() {
+        const ctx = initStreamAudioContext();
+        
+        if (ctx.state === 'suspended') {
+            ctx.resume().then(() => {
+                isPlaying = true;
+                nextBufferTime = ctx.currentTime;
+                updateAudioStatus('Playing');
+                updatePlaybackState('Playing');
+                processAudioQueue();
+            });
+        } else {
+            isPlaying = true;
+            nextBufferTime = ctx.currentTime;
+            updateAudioStatus('Playing');
+            updatePlaybackState('Playing');
+            processAudioQueue();
+        }
+    }
+
+    function pauseAudioPlayback() {
+        isPlaying = false;
+        updateAudioStatus('Paused');
+        updatePlaybackState('Paused');
+        
+        if (streamAudioContext) {
+            streamAudioContext.suspend();
+        }
+    }
+
+    function stopAudioPlayback() {
+        isPlaying = false;
+        audioBufferQueue = [];
+        nextBufferTime = 0;
+        
+        updateAudioStatus('Stopped');
+        updatePlaybackState('Stopped');
+        updateBufferStatus('Empty');
+        
+        if (streamAudioContext) {
+            streamAudioContext.suspend();
+        }
+        
+        // Hide audio container after a delay
+        setTimeout(() => {
+            setAudioContainerVisible(false);
+        }, 2000);
+    }
+
+    async function handleIncomingAudioChunk(base64Data) {
+        if (!base64Data || typeof base64Data !== 'string') return;
+        
+        // Add to our buffer queue
+        audioBufferQueue.push(base64Data);
+        audioBase64Chunks.push(base64Data);
+        
+        // Show audio container if hidden
+        setAudioContainerVisible(true);
+        
+        // Auto-start playback if not already playing
+        if (!isPlaying) {
+            updateAudioStatus('Starting playback...');
+            startAudioPlayback();
+        }
+        
+        // Process the queue
+        if (isPlaying) {
+            processAudioQueue();
+        }
+        
+        updateBufferStatus(`${audioBufferQueue.length} chunks in queue`);
+        updateStreamBufferSize();
+    }
+
+    // Audio control event listeners
+    if (playStreamBtn) {
+        playStreamBtn.addEventListener('click', () => {
+            startAudioPlayback();
+        });
+    }
+
+    if (pauseStreamBtn) {
+        pauseStreamBtn.addEventListener('click', () => {
+            pauseAudioPlayback();
+        });
+    }
+
+    if (stopStreamBtn) {
+        stopStreamBtn.addEventListener('click', () => {
+            stopAudioPlayback();
+        });
+    }
+
+    // ============================
+    // EXISTING CHAT FUNCTIONALITY
+    // ============================
     
     // Chat history functions
     function saveChatHistory(sessionId, messages) {
-        localStorage.setItem(`chatHistory_${sessionId}`, JSON.stringify(messages));
+        // Note: Using variables instead of localStorage as per requirements
+        window.chatHistory = window.chatHistory || {};
+        window.chatHistory[sessionId] = messages;
     }
     
     function loadChatHistory(sessionId) {
-        const stored = localStorage.getItem(`chatHistory_${sessionId}`);
-        return stored ? JSON.parse(stored) : [];
+        window.chatHistory = window.chatHistory || {};
+        return window.chatHistory[sessionId] || [];
     }
     
     function addMessageToHistory(sessionId, role, content) {
@@ -162,7 +554,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const alreadyRendered = document.querySelector(`.final-transcript[data-session-id="${currentSessionId}"]`);
 
                 if (foundTranscription && !alreadyRendered) {
-                    console.log('📥 Fallback: Found transcription from server:', foundTranscription.text);
+                    console.log('🔥 Fallback: Found transcription from server:', foundTranscription.text);
                     showLiveTranscription(foundTranscription.text, true, currentSessionId);
                     
                     // Clear the interval since we found the transcription
@@ -185,14 +577,32 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function resetConversation() {
-        // Clear localStorage for current session
-        localStorage.removeItem(`chatHistory_${currentSessionId}`);
+        // Stop recording if active
+        if (isRecording) {
+            stopRecording();
+        }
+        
+        // Clear chat history for current session
+        window.chatHistory = window.chatHistory || {};
+        delete window.chatHistory[currentSessionId];
         
         // Generate new session ID
         currentSessionId = 'session_init_' + Date.now();
         
         // Clear chat container
         chatContainer.innerHTML = '';
+        
+        // Stop any ongoing audio playback
+        stopAudioPlayback();
+        
+        // Reset audio chunks
+        audioBase64Chunks = [];
+        audioBufferQueue = [];
+        
+        // Hide streaming panels
+        setAudioContainerVisible(false);
+        // Keep streaming monitor visible but reset it
+        setStreamStatus('Waiting');
         
         // Clear any error messages
         const errorDiv = document.getElementById('error');
@@ -236,8 +646,68 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Error:', message);
     }
     
-    // Initialize chat display
+    // Initialize chat display, streaming UI, and persona info
     displayChatHistory(currentSessionId);
+    initializeStreamingUI();
+    fetchPersonaInfo();
+    
+    // Add test streaming functionality
+    const testStreamBtn = document.getElementById('testStreamBtn');
+    const clearStreamBtn = document.getElementById('clearStreamBtn');
+    
+    if (testStreamBtn) {
+        testStreamBtn.addEventListener('click', () => {
+            console.log('🧪 Testing audio streaming UI...');
+            testAudioStreaming();
+        });
+    }
+    
+    if (clearStreamBtn) {
+        clearStreamBtn.addEventListener('click', () => {
+            console.log('🗑️ Clearing test streaming...');
+            clearTestStreaming();
+        });
+    }
+    
+    function testAudioStreaming() {
+        // Simulate incoming audio chunks
+        const testChunks = [
+            'iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAAB4nJmNU7+cjnQKqCmMz+O8=',
+            'VGhpcyBpcyBhIHRlc3QgYXVkaW8gY2h1bmsgZm9yIGRlbW9uc3RyYXRpb24gcHVycG9zZXMgb25seQ==',
+            'QW5vdGhlciB0ZXN0IGNodW5rIHdpdGggc29tZSBkdW1teSBiYXNlNjQgZGF0YSBmb3IgdGVzdGluZw==',
+            'RmluYWwgdGVzdCBjaHVuayB0byBzaG93IHN0cmVhbWluZyBjb21wbGV0aW9uIGluIGFjdGlvbiE='
+        ];
+        
+        let chunkIndex = 0;
+        const interval = setInterval(() => {
+            if (chunkIndex < testChunks.length) {
+                console.log(`📡 Simulating chunk ${chunkIndex + 1}/${testChunks.length}`);
+                handleIncomingAudioChunk(testChunks[chunkIndex]);
+                chunkIndex++;
+            } else {
+                clearInterval(interval);
+                setStreamStatus('Completed');
+                console.log('✅ Test streaming completed');
+            }
+        }, 1000);
+    }
+    
+    function clearTestStreaming() {
+        stopAudioPlayback();
+        audioBase64Chunks = [];
+        audioBufferQueue = [];
+        
+        // Reset UI
+        setStreamStatus('Waiting');
+        if (streamChunkCount) streamChunkCount.textContent = '0';
+        if (streamTotalChars) streamTotalChars.textContent = '0';
+        if (streamBufferSize) streamBufferSize.textContent = '0 KB';
+        if (streamChunksList) {
+            streamChunksList.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.6); padding: 20px; font-style: italic;">Audio chunks will appear here during streaming...</div>';
+        }
+        
+        console.log('🧹 Test streaming cleared');
+    }
     
     // Record button functionality
     if (recordBtn) {
@@ -268,10 +738,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function startRecording() {
         try {
+            // Reset audio state for new recording
+            stopAudioPlayback();
+            audioBase64Chunks = [];
+            audioBufferQueue = [];
+            streamAnnounced = false;
+
             // Establish WebSocket connection
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             // Use the dedicated turn-detection endpoint to keep concerns separated
-            const wsUrl = `${protocol}//${window.location.host}/ws/turn-detection`;
+            const wsUrl = `${protocol}//${window.location.host}/ws/streaming`;
             websocket = new WebSocket(wsUrl);
             
             websocket.onopen = function() {
@@ -279,10 +755,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             websocket.onmessage = function(event) {
-                console.log('Server response:', event.data);
+                console.log('📨 Server response:', event.data);
                 
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('📋 Parsed message type:', data.type);
                     
                     switch(data.type) {
                         case 'connection_established':
@@ -291,21 +768,69 @@ document.addEventListener('DOMContentLoaded', function() {
                             if (data.session_id) {
                                 currentSessionId = data.session_id;
                                 console.log('🔑 Session ID set by server:', currentSessionId);
+                            } else {
+                                console.warn('⚠️ Invalid audio chunk data:', typeof data.data, data.data?.length);
                             }
                             break;
+                            
                         case 'audio_chunk':
-                            // Accumulate base64 chunks and log acknowledgement
+                            // Handle incoming audio chunks for playback
+                            console.log('🎵 AUDIO_CHUNK detected! Data type:', typeof data.data, 'Length:', data.data?.length);
                             if (typeof data.data === 'string' && data.data.length) {
-                                audioBase64Chunks.push(data.data);
-                                console.log(`🎧 Audio chunk received (${audioBase64Chunks.length})`);
+                                console.log(`🎧 Audio chunk received (${audioBase64Chunks.length + 1})`);
+                                console.log('🎵 First 100 chars of audio data:', data.data.substring(0, 100));
+                                
+                                if (!streamAnnounced) {
+                                    console.log('🎵 Output streaming to client - starting playback');
+                                    streamAnnounced = true;
+                                }
+                                
+                                // Handle the audio chunk for streaming playback
+                                handleIncomingAudioChunk(data.data);
+                                
+                                // Update UI - Clear placeholder message first
+                                setStreamVisible(true);
+                                setStreamStatus('Streaming');
+                                
+                                // Clear placeholder message on first chunk
+                                if (audioBase64Chunks.length === 1) {
+                                    if (streamChunksList) {
+                                        streamChunksList.innerHTML = '';
+                                    }
+                                }
+                                
+                                if (streamChunkCount) streamChunkCount.textContent = String(audioBase64Chunks.length);
+                                if (streamTotalChars) {
+                                    const total = audioBase64Chunks.reduce((acc, s) => acc + s.length, 0);
+                                    streamTotalChars.textContent = String(total);
+                                }
+                                if (streamChunksList) {
+                                    const row = document.createElement('div');
+                                    row.className = 'stream-chunk-row';
+                                    row.textContent = `Chunk ${audioBase64Chunks.length}: ${data.data.slice(0, 64)}...`;
+                                    row.style.cssText = 'padding: 4px 8px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px; margin: 2px 0; border-left: 3px solid #48bb78;';
+                                    streamChunksList.prepend(row);
+                                    
+                                    // Keep only last 10 chunks visible
+                                    const rows = streamChunksList.querySelectorAll('.stream-chunk-row');
+                                    if (rows.length > 10) {
+                                        rows[rows.length - 1].remove();
+                                    }
+                                }
                             }
                             break;
+
                         case 'audio_stream_end':
-                            // Log final acknowledgement and size; do not auto-play
-                            const totalChars1 = audioBase64Chunks.reduce((acc, s) => acc + s.length, 0);
-                            console.log(`✅ Audio stream complete. Chunks: ${audioBase64Chunks.length}, total base64 chars: ${totalChars1}`);
-                            // Reset for next turn
-                            audioBase64Chunks = [];
+                            console.log('✅ Output sent to client - stream complete');
+                            setStreamStatus('Completed');
+                            updateAudioStatus('Stream completed');
+                            
+                            // Keep the list visible for context; reset counters for next turn after delay
+                            setTimeout(() => {
+                                if (streamChunkCount) streamChunkCount.textContent = '0';
+                                if (streamTotalChars) streamTotalChars.textContent = '0';
+                                streamAnnounced = false;
+                            }, 2000);
                             break;
                             
                         case 'transcribing':
@@ -316,41 +841,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         case 'partial_transcript':
                             console.log('📝 Partial transcript:', data.text);
                             showLiveTranscription(data.text, false);
-                            break;
-                        case 'audio_chunk':
-                            if (typeof data.data === 'string' && data.data.length) {
-                                audioBase64Chunks.push(data.data);
-                                if (!streamAnnounced) {
-                                    console.log('Output streaming to client');
-                                    streamAnnounced = true;
-                                }
-                                // Update UI
-                                setStreamVisible(true);
-                                setStreamStatus('Streaming');
-                                if (streamChunkCount) streamChunkCount.textContent = String(audioBase64Chunks.length);
-                                if (streamTotalChars) {
-                                    const total = audioBase64Chunks.reduce((acc, s) => acc + s.length, 0);
-                                    streamTotalChars.textContent = String(total);
-                                }
-                                if (streamChunksList) {
-                                    const row = document.createElement('div');
-                                    row.className = 'stream-chunk-row';
-                                    row.textContent = `Chunk ${audioBase64Chunks.length}: ${data.data.slice(0, 64)}...`;
-                                    streamChunksList.prepend(row);
-                                }
-                            }
-                            break;
-                        case 'audio_stream_end':
-                            // Log final acknowledgement and size; do not auto-play
-                            console.log('Output sent to client');
-                            setStreamStatus('Completed');
-                            // keep the list visible for context; reset counters for next turn after small delay
-                            setTimeout(() => {
-                                if (streamChunkCount) streamChunkCount.textContent = '0';
-                                if (streamTotalChars) streamTotalChars.textContent = '0';
-                                audioBase64Chunks = [];
-                                streamAnnounced = false;
-                            }, 1200);
                             break;
                             
                         case 'final_transcript':
@@ -365,7 +855,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         case 'turn_end':
                             console.log('🛑 Turn ended by server.');
-                            // Optionally show a subtle UI cue that turn has ended
                             // Close WebSocket after a short delay to finish any server cleanup
                             setTimeout(() => {
                                 if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -429,8 +918,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }, 2000);
                 }
-                // Always reset audio chunks on close to avoid leaking state
-                audioBase64Chunks = [];
             };
 
             websocket.onerror = function(error) {
@@ -438,14 +925,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 showError('A connection error occurred. Please try again.');
             };
 
-            // Get microphone access (we'll stream raw PCM 16k mono to server)
+            // Get microphone access
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: {
                     echoCancellation: true,
                     noiseSuppression: true,
-                    channelCount: 1
+                    channelCount: 1,
+                    sampleRate: 16000
                 }
             });
+
+            // Initialize Voice Activity Detection
+            initVoiceActivityDetection(stream);
 
             // Fallback MediaRecorder (used only if we need to upload a blob later)
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
@@ -453,9 +944,9 @@ document.addEventListener('DOMContentLoaded', function() {
             mediaRecorder.ondataavailable = event => { if (event.data.size > 0) audioChunks.push(event.data); };
 
             // Live PCM streaming pipeline using Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-            const source = audioContext.createMediaStreamSource(stream);
-            const processor = audioContext.createScriptProcessor(4096, 1, 1);
+            const vadAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+            const source = vadAudioContext.createMediaStreamSource(stream);
+            const processor = vadAudioContext.createScriptProcessor(4096, 1, 1);
 
             processor.onaudioprocess = (e) => {
                 if (!(websocket && websocket.readyState === WebSocket.OPEN)) return;
@@ -469,14 +960,14 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             source.connect(processor);
-            processor.connect(audioContext.destination);
+            processor.connect(vadAudioContext.destination);
 
             mediaRecorder.onstart = () => {
-                console.log('Recording started');
+                console.log('Recording started with automatic turn detection');
                 isRecording = true;
                 recordBtn.classList.add('recording');
                 const recordText = recordBtn.querySelector('.record-text');
-                if (recordText) recordText.textContent = 'Stop Recording';
+                if (recordText) recordText.textContent = 'Stop Recording (or speak and pause)';
                 recordingIndicator.classList.remove('hidden');
             };
             
@@ -487,6 +978,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const recordText = recordBtn.querySelector('.record-text');
                 if (recordText) recordText.textContent = 'Start Recording';
                 recordingIndicator.classList.add('hidden');
+                
+                // Stop VAD
+                stopVoiceActivityDetection();
                 
                 // Send a "stop_streaming" message to the server
                 if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -504,7 +998,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     const alreadyRendered = document.querySelector(`.final-transcript[data-session-id="${currentSessionId}"]`);
                     if (!alreadyRendered && audioChunks.length > 0) {
-                        console.log('⛑️ Streaming fallback: uploading recorded audio to /agent/chat');
+                        console.log('⛽️ Streaming fallback: uploading recorded audio to /agent/chat');
                         const completeBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
                         try {
                             await processAudio(completeBlob);
@@ -517,6 +1011,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Stop the microphone track
                 const tracks = mediaRecorder.stream.getTracks();
                 tracks.forEach(track => track.stop());
+                
+                // Cleanup streaming audio context
+                if (vadAudioContext && vadAudioContext.state !== 'closed') {
+                    vadAudioContext.close();
+                }
+                
+                // Reset recording indicator text
+                const recordingText = document.getElementById('recordingText');
+                if (recordingText) {
+                    recordingText.textContent = 'Recording in progress...';
+                }
                 
                 // Finalize any pending transcription
                 if (currentTranscriptDiv) {
@@ -547,6 +1052,9 @@ document.addEventListener('DOMContentLoaded', function() {
             mediaRecorder.stop();
         }
         
+        // Stop VAD
+        stopVoiceActivityDetection();
+        
         // Send stop streaming message to server
         if (websocket && websocket.readyState === WebSocket.OPEN) {
             websocket.send('stop_streaming');
@@ -563,6 +1071,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const recordText = recordBtn.querySelector('.record-text');
         if (recordText) recordText.textContent = 'Start Recording';
         recordingIndicator.classList.add('hidden');
+        
+        // Reset recording indicator text
+        const recordingText = document.getElementById('recordingText');
+        if (recordingText) {
+            recordingText.textContent = 'Recording in progress...';
+        }
         
         // Finalize any pending transcription
         if (currentTranscriptDiv) {
@@ -597,8 +1111,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     addMessageToHistory(currentSessionId, 'assistant', data.llm_response);
                 }
                 
-                // Play audio response if available
-                if (data.audio_url) {
+                // Handle audio response - prefer streaming over URL
+                if (data.audio_base64) {
+                    console.log('📡 Processing fallback audio response');
+                    handleIncomingAudioChunk(data.audio_base64);
+                } else if (data.audio_url) {
+                    console.log('🔗 Using audio URL fallback');
                     const audio = new Audio(data.audio_url);
                     audio.play().catch(e => console.log('Audio autoplay blocked'));
                 }

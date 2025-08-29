@@ -10,7 +10,47 @@ body {
     min-height: 100vh;
     color: #e0e0e0;
     overflow-x: hidden;
+    position: relative; /* Added for pseudo-elements */
 }
+
+/* === NEW ADDITION: Animated Background Effects === */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(102, 126, 234, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 126, 234, 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -2;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse 60% 70% at 80% -10%, rgba(118, 75, 162, 0.15), transparent),
+        radial-gradient(ellipse 50% 60% at 20% -5%, rgba(102, 126, 234, 0.2), transparent);
+    animation: aurora 15s ease-in-out infinite alternate;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes aurora {
+    0% { transform: translateY(0%) rotate(0deg); }
+    50% { transform: translateY(-10%) rotate(5deg); }
+    100% { transform: translateY(0%) rotate(0deg); }
+}
+/* === END NEW ADDITION === */
 
 .container {
     max-width: 900px;
@@ -38,6 +78,20 @@ header h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    
+    /* === NEW ADDITION: Animated Text Gradient === */
+    background: linear-gradient(90deg, #c5caff, #ffffff, #ffc4c4, #c5caff);
+    background-size: 250% auto;
+    color: #fff;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textShine 8s linear infinite;
+    /* === END NEW ADDITION === */
+}
+
+@keyframes textShine {
+    to { background-position: 250% center; }
 }
 
 header h2 {
@@ -71,7 +125,22 @@ main {
     border: 1px solid rgba(102, 126, 234, 0.2);
     position: relative;
     overflow: hidden;
+    /* === MODIFICATION: Added transition for hover effect === */
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+                border-color 0.4s ease;
 }
+
+/* === NEW ADDITION: Interactive hover effect for the main card === */
+.voice-agent:hover {
+    transform: translateY(-8px);
+    border-color: rgba(102, 126, 234, 0.4);
+    box-shadow: 
+        0 30px 80px rgba(0, 0, 0, 0.5),
+        0 0 60px rgba(102, 126, 234, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+/* === END NEW ADDITION === */
 
 .voice-agent::before {
     content: '';
@@ -210,6 +279,8 @@ main {
     overflow: hidden;
     z-index: 2;
     border: 3px solid rgba(255, 255, 255, 0.1);
+    /* === NEW ADDITION: Enable 3D transform space === */
+    transform-style: preserve-3d;
 }
 
 .record-button::before {
@@ -238,7 +309,8 @@ main {
 }
 
 .record-button:hover {
-    transform: scale(1.05);
+    /* === MODIFICATION: Added 3D perspective to existing hover === */
+    transform: scale(1.05) perspective(1000px) rotateY(5deg) rotateX(2deg);
     box-shadow: 0 20px 40px rgba(255, 107, 107, 0.5);
 }
 
@@ -488,7 +560,21 @@ main {
     max-width: 85%;
     word-wrap: break-word;
     animation: messageSlide 0.3s ease-out;
+    /* === NEW ADDITION: Transition for hover effect === */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+/* === NEW ADDITION: Hover effect for chat messages === */
+.message:hover {
+    transform: translateY(-4px);
+}
+.message.user:hover {
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+.message.assistant:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+/* === END NEW ADDITION === */
 
 .message.user {
     background: linear-gradient(135deg, #667eea, #764ba2);
@@ -536,21 +622,6 @@ main {
     opacity: 1;
     font-style: normal;
     animation: finalizeTranscript 0.5s ease-in-out;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 0.8; }
-    50% { opacity: 0.6; }
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-}
-
-@keyframes finalizeTranscript {
-    0% { transform: scale(0.98); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
 }
 
 /* Audio Container */
@@ -663,6 +734,15 @@ audio {
     line-height: 1.6;
     font-size: 1.1rem;
 }
+
+/* === NEW ADDITION: Focus styles for accessibility === */
+input[type="file"]:focus-visible {
+    outline: 2px solid #667eea;
+    outline-offset: 4px;
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+}
+/* === END NEW ADDITION === */
 
 /* Utility Classes */
 .hidden {
@@ -870,4 +950,272 @@ audio {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Day 22: Streaming Audio Playback Styles */
+.audio-container {
+    background: linear-gradient(135deg, #f8f9ff, #e8f4fd);
+    border: 2px solid #4A90E2;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 8px 25px rgba(74, 144, 226, 0.15);
+}
+
+.audio-playback-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e1ecf4;
+}
+
+.audio-playback-header h3 {
+    margin: 0;
+    color: #2c5282;
+    font-size: 1.2em;
+}
+
+.audio-status {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.audio-controls {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    justify-content: center;
+}
+
+.audio-control-btn {
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.audio-control-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.audio-control-btn:disabled {
+    background: linear-gradient(135deg, #cbd5e0, #a0aec0);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.audio-control-btn:active:not(:disabled) {
+    transform: translateY(0px);
+}
+
+.audio-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e1ecf4;
+}
+
+.audio-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.audio-stat .label {
+    font-size: 0.85em;
+    color: #4a5568;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.audio-stat span:last-child {
+    font-size: 1.1em;
+    color: #2d3748;
+    font-weight: 600;
+    background: #ffffff;
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: 1px solid #e1ecf4;
+}
+
+/* Enhanced Stream Card Styles */
+.stream-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.stream-card-header h3 {
+    margin: 0;
+    font-size: 1.3em;
+    font-weight: 600;
+}
+
+.stream-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 15px 10px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pill-waiting {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.pill-active {
+    background: #48bb78;
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.pill-done {
+    background: #38b2ac;
+    color: white;
+}
+
+.stream-chunks {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    backdrop-filter: blur(10px);
+}
+
+.stream-chunk-row {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 4px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8em;
+    word-break: break-all;
+    border-left: 3px solid #48bb78;
+}
+
+/* Audio element styling */
+#audioPlayback {
+    width: 100%;
+    margin: 15px 0;
+    border-radius: 10px;
+    background: #f7fafc;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .audio-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .audio-control-btn {
+        font-size: 12px;
+        padding: 8px 16px;
+    }
+    
+    .stream-stats {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .audio-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* Quick Transcribe LLM Output Styling */
+.qt-llm {
+    background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+    border: 2px solid #4A90E2;
+    border-radius: 15px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.qt-llm-title {
+    color: #2c5282;
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.qt-llm-text {
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    border-left: 4px solid #4A90E2;
+    color: #2d3748;
+    line-height: 1.5;
+    margin-bottom: 10px;
 }
