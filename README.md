@@ -1,4 +1,4 @@
-# BuddyBot - A 30-Day Journey with Murf AI
+# ARCANUS THE WISE - A 30-Day Journey with Murf AI
 
 Hey there! Let me tell you about this cool voice assistant I built. It's like having a conversation with a really smart friend who never gets tired of talking to you. You speak to it, it thinks about what you said, and then talks back to you with a natural voice.
 
